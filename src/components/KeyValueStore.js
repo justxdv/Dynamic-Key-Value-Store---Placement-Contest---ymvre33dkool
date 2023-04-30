@@ -1,72 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import '../styles/App.css';
 
-const KeyValueStore = () => {
-  const { key1, value1, key2, value2 } = useParams();
-  const navigate = useNavigate();
 
+const KeyValueStore = () => {
+  
   const [keyValues, setKeyValues] = useState({});
 
-  const updateKeyValue = (key, value) => {
-    setKeyValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleUpdateClick = () => {
-    const urlSearchParams = new URLSearchParams();
-    Object.entries(keyValues).forEach(([key, value]) => {
-      urlSearchParams.append(key, value);
-    });
-    navigate(`/?${urlSearchParams.toString()}`);
-  };
-
-  const handleDeleteClick = (key) => {
-    const newKeyValues = { ...keyValues };
-    delete newKeyValues[key];
-    setKeyValues(newKeyValues);
   
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    urlSearchParams.delete(key);
-    navigate(`/?${urlSearchParams.toString()}`);
+  const updateKeyValue = (key, value) => {
+    setKeyValues(prevState => {
+      return { ...prevState, [key]: value };
+    });
   };
 
-  useEffect(() => {
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const newKeyValues = {};
-    urlSearchParams.forEach((value, key) => {
-      newKeyValues[key] = value;
+  
+  const handleUpdateClick = () => {
+   
+    const queryParams = Object.keys(keyValues)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(keyValues[key])}`)
+      .join('&');
+
+  
+    window.history.replaceState(null, null, `?${queryParams}`);
+  };
+
+ 
+  const handleDeleteClick = (key) => {
+    
+    setKeyValues(prevState => {
+      const newState = { ...prevState };
+      delete newState[key];
+      return newState;
     });
+  };
+
+  
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const newKeyValues = {};
+
+    for (let [key, value] of queryParams.entries()) {
+      newKeyValues[decodeURIComponent(key)] = decodeURIComponent(value);
+    }
+
     setKeyValues(newKeyValues);
   }, []);
 
   return (
     <div>
       <h1>Key Value Store</h1>
-      {Object.keys(keyValues).length ? (
-        <>
-          {Object.entries(keyValues).map(([key, value]) => (
-            <div key={key} className="key-value-div">
-              <span className="key-field">{key}:</span>
-              <input
-                className="value-field"
-                type="text"
-                value={value}
-                onChange={(e) => updateKeyValue(key, e.target.value)}
-              />
-              <button className="delete-btn" onClick={() => handleDeleteClick(key)}>
-                Delete
-              </button>
-            </div>
-          ))}
-          <button className="update-btn" onClick={handleUpdateClick}>
-            Update Values
-          </button>
-        </>
-      ) : (
-        <p>No key values found in URL.</p>
-      )}
+      <div>
+        {/* map the key-value pairs from the state */}
+        {Object.entries(keyValues).map(([key, value]) => (
+          <div key={key} className='key-value-div'>
+            <span className='key-field'>{key}:</span>
+            <input
+              className='value-field'
+              type="text"
+              value={value}
+              onChange={(e) => updateKeyValue(key, e.target.value)}
+            />
+            <button className='delete-btn' onClick={() => handleDeleteClick(key)}>Delete</button>
+          </div>
+        ))}
+
+        
+        <button className='update-btn' onClick={handleUpdateClick}>Update Values</button>
+      </div>
+
+      
+      {Object.keys(keyValues).length === 0 && <p>No key values found in URL.</p>}
     </div>
   );
-      };
+};
 
 export default KeyValueStore;
